@@ -15,11 +15,17 @@ public class EmailAlertService {
     @Value("${network.security.alerts.email.enabled:true}")
     private boolean emailAlertsEnabled;
 
-    @Value("${network.security.alerts.email.recipient:admin@example.com}")
+    @Value("${network.security.alerts.email.recipient}")
     private String recipientEmail;
 
     @Value("${network.security.alerts.email.subject:Network Security Alert}")
     private String emailSubject;
+
+    @Value("${spring.mail.username}")
+    private String login;
+
+    @Value("${spring.mail.password}")
+    private String password;
 
     public EmailAlertService(JavaMailSender mailSender) {
         this.mailSender = mailSender;
@@ -42,6 +48,9 @@ public class EmailAlertService {
             mailSender.send(mailMessage);
             log.info("[EmailAlert] Wysłano alert na adres: {}", recipientEmail);
         } catch (Exception e) {
+            log.error(recipientEmail);
+            log.error(login);
+            log.error(password);
             log.error("[EmailAlert] Błąd wysyłania e-maila: {}", e.getMessage());
         }
     }
