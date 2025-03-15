@@ -1,5 +1,6 @@
 package io.github.kubq01.networklibrary.filter;
 
+import io.github.kubq01.networklibrary.emailSender.EmailAlertService;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -7,6 +8,7 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
@@ -24,6 +26,12 @@ public class DDoSFilter implements Filter {
     private static final int REQUEST_LIMIT = 100;
     private static final long TIME_WINDOW_MS = 60_000;
 
+    private final EmailAlertService emailAlertService;
+
+    public DDoSFilter(EmailAlertService emailAlertService) {
+        this.emailAlertService = emailAlertService;
+    }
+
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException {
@@ -38,6 +46,7 @@ public class DDoSFilter implements Filter {
 
             if (currentCount > REQUEST_LIMIT) {
                 log.warn("[DDoS Alert] Podejrzana aktywność z IP: {}", clientIp);
+                emailAlertService.sendAlert("Podejrzany ruch z IP: " + clientIp + ". Podejrzenie ataku DDos");
             }
 
             // Reset licznika po upływie okna czasowego

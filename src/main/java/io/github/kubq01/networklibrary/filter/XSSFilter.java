@@ -1,5 +1,6 @@
 package io.github.kubq01.networklibrary.filter;
 
+import io.github.kubq01.networklibrary.emailSender.EmailAlertService;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -20,6 +21,12 @@ public class XSSFilter implements Filter {
 
     private static final Pattern XSS_PATTERN = Pattern.compile("<script>(.*?)</script>", Pattern.CASE_INSENSITIVE);
 
+    private final EmailAlertService emailAlertService;
+
+    public XSSFilter(EmailAlertService emailAlertService) {
+        this.emailAlertService = emailAlertService;
+    }
+
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException {
@@ -29,6 +36,7 @@ public class XSSFilter implements Filter {
 
             if (query != null && XSS_PATTERN.matcher(query).matches()) {
                 log.warn("[XSS Alert] Wykryto podejrzane zapytanie: {}", query);
+                emailAlertService.sendAlert("Podejrzany ruch z IP: " + request.getRemoteAddr() + ". Podejrzenie ataku XXS");
             }
         }
 

@@ -1,5 +1,6 @@
 package io.github.kubq01.networklibrary.filter;
 
+import io.github.kubq01.networklibrary.emailSender.EmailAlertService;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -24,6 +25,12 @@ public class BruteForceFilter implements Filter {
     private static final int ATTEMPT_LIMIT = 30;
     private static final long LOCKOUT_TIME_MS = 300_000;
 
+    private final EmailAlertService emailAlertService;
+
+    public BruteForceFilter(EmailAlertService emailAlertService) {
+        this.emailAlertService = emailAlertService;
+    }
+
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException {
@@ -40,6 +47,7 @@ public class BruteForceFilter implements Filter {
 
                 if (attempts > ATTEMPT_LIMIT) {
                     log.warn("[Brute Force Alert] Podejrzane próby logowania z IP: {}", clientIp);
+                    emailAlertService.sendAlert("Podejrzany ruch z IP: " + clientIp + ". Podejrzenie ataku Brute Force");
                 }
 
                 new Thread(() -> {
