@@ -48,9 +48,6 @@ public class EmailAlertService {
             mailSender.send(mailMessage);
             log.info("[EmailAlert] Wysłano alert na adres: {}", recipientEmail);
         } catch (Exception e) {
-            log.error(recipientEmail);
-            log.error(login);
-            log.error(password);
             log.error("[EmailAlert] Błąd wysyłania e-maila: {}", e.getMessage());
         }
     }
