@@ -2,7 +2,6 @@ package io.github.kubq01.networklibrary.filter;
 
 import io.github.kubq01.networklibrary.emailSender.EmailAlertService;
 import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.BeforeEach;
@@ -17,7 +16,6 @@ import org.springframework.test.util.ReflectionTestUtils;
 import java.io.IOException;
 
 import static org.mockito.Mockito.*;
-
 class BruteForceFilterTest {
 
     private BruteForceFilter filter;
@@ -37,6 +35,7 @@ class BruteForceFilterTest {
         ReflectionTestUtils.setField(emailAlertService, "emailAlertsEnabled", true);
         ReflectionTestUtils.setField(emailAlertService, "recipientEmail", "security@example.com");
         ReflectionTestUtils.setField(emailAlertService, "emailSubject", "Security Alert");
+        ReflectionTestUtils.setField(emailAlertService, "loginPath", "/login");
         filter = new BruteForceFilter(emailAlertService);
         request = mock(HttpServletRequest.class);
         response = mock(ServletResponse.class);

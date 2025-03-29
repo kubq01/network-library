@@ -44,7 +44,7 @@ class XSSFilterTest {
 
     @Test
     void shouldDetectXSS() throws IOException, jakarta.servlet.ServletException {
-        when(request.getQueryString()).thenReturn("<script>alert('XSS')</script>");
+        when(request.getQueryString()).thenReturn("query=<script>alert('XSS')</script>");
 
         filter.doFilter(request, response, chain);
 

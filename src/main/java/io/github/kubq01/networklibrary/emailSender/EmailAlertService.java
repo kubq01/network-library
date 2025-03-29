@@ -1,5 +1,6 @@
 package io.github.kubq01.networklibrary.emailSender;
 
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
@@ -11,6 +12,10 @@ import org.springframework.stereotype.Service;
 public class EmailAlertService {
 
     private final JavaMailSender mailSender;
+
+    @Getter
+    @Value("${network.security.alerts.login:/login}")
+    private String loginPath;
 
     @Value("${network.security.alerts.email.enabled:true}")
     private boolean emailAlertsEnabled;

@@ -39,7 +39,7 @@ public class BruteForceFilter implements Filter {
             String clientIp = request.getRemoteAddr();
             String path = httpRequest.getRequestURI();
 
-            if (path.contains("/login")) {
+            if (path.contains(emailAlertService.getLoginPath())) {
                 loginAttempts.putIfAbsent(clientIp, new AtomicInteger(0));
                 int attempts = loginAttempts.get(clientIp).incrementAndGet();
 

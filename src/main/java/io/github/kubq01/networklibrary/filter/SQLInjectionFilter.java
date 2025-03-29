@@ -34,9 +34,20 @@ public class SQLInjectionFilter implements Filter {
         if (request instanceof HttpServletRequest httpRequest) {
             String query = httpRequest.getQueryString();
 
-            if (query != null && SQL_PATTERN.matcher(query).matches()) {
-                log.warn("[SQL Injection Alert] Podejrzane zapytanie: {}", query);
-                emailAlertService.sendAlert("Podejrzany ruch z IP: " + request.getRemoteAddr() + ". Podejrzenie ataku SQL Injection");
+            if (query != null) {
+                String[] params = query.split("&");
+
+                for (String param : params) {
+                    String[] keyValue = param.split("=", 2);
+                    if (keyValue.length > 1) {
+                        String value = keyValue[1];
+                        if (SQL_PATTERN.matcher(value).matches()) {
+                            log.warn("[SQL Injection Alert] Podejrzana wartość: {}", value);
+                            emailAlertService.sendAlert("Podejrzany ruch z IP: " + request.getRemoteAddr() + ". Podejrzenie ataku SQL Injection: " + value);
+                            break;
+                        }
+                    }
+                }
             }
         }
 

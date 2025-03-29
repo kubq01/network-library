@@ -44,7 +44,7 @@ class SQLInjectionFilterTest {
 
     @Test
     void shouldDetectSQLInjection() throws IOException, jakarta.servlet.ServletException {
-        when(request.getQueryString()).thenReturn("SELECT * FROM users WHERE username='admin' --");
+        when(request.getQueryString()).thenReturn("query=SELECT * FROM users WHERE username='admin' --");
 
         filter.doFilter(request, response, chain);
 

@@ -12,6 +12,8 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.regex.Pattern;
 
 @Slf4j
@@ -33,10 +35,23 @@ public class XSSFilter implements Filter {
 
         if (request instanceof HttpServletRequest httpRequest) {
             String query = httpRequest.getQueryString();
+            String decodedQuery = URLDecoder.decode(query, StandardCharsets.UTF_8);
+            log.warn("decoded query: {}", decodedQuery);
 
-            if (query != null && XSS_PATTERN.matcher(query).matches()) {
-                log.warn("[XSS Alert] Wykryto podejrzane zapytanie: {}", query);
-                emailAlertService.sendAlert("Podejrzany ruch z IP: " + request.getRemoteAddr() + ". Podejrzenie ataku XXS");
+            if (query != null) {
+                String[] params = query.split("&");
+
+                for (String param : params) {
+                    String[] keyValue = param.split("=", 2);
+                    if (keyValue.length > 1) {
+                        String value = keyValue[1];
+                        if (XSS_PATTERN.matcher(value).matches()) {
+                            log.warn("[XSS Alert] Wykryto podejrzaną wartość: {}", value);
+                            emailAlertService.sendAlert("Podejrzany ruch z IP: " + request.getRemoteAddr() + ". Podejrzenie ataku XSS: " + value);
+                            break;
+                        }
+                    }
+                }
             }
         }
 
