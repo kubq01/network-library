@@ -1,65 +1,53 @@
 package io.github.kubq01.networklibrary.filter;
 
-import io.github.kubq01.networklibrary.emailSender.EmailAlertService;
-import jakarta.servlet.Filter;
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.ServletRequest;
-import jakarta.servlet.ServletResponse;
-import jakarta.servlet.http.HttpServletRequest;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.annotation.Order;
-import org.springframework.stereotype.Component;
-
-import java.io.IOException;
+import jade.core.AID;
+import jade.core.Agent;
+import jade.core.behaviours.CyclicBehaviour;
+import jade.lang.acl.ACLMessage;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-@Slf4j
-@Component
-@Order(1)
-public class DDoSFilter implements Filter {
+
+public class DDoSFilter extends Agent {
 
     private static final Map<String, AtomicInteger> requestCounts = new ConcurrentHashMap<>();
     private static final int REQUEST_LIMIT = 100;
     private static final long TIME_WINDOW_MS = 60_000;
 
-    private final EmailAlertService emailAlertService;
-
-    public DDoSFilter(EmailAlertService emailAlertService) {
-        this.emailAlertService = emailAlertService;
+    @Override
+    protected void setup() {
+        addBehaviour(new CyclicBehaviour() {
+            public void action() {
+                ACLMessage msg = receive();
+                if (msg != null) newRequest(msg);
+                else block();
+            }
+        });
     }
 
-    @Override
-    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
-            throws IOException, ServletException {
+    public void newRequest(ACLMessage msg) {
+        String[] parts = msg.getContent().split("\\|", 3);
+        if (parts.length < 1) return;
 
-        if (request instanceof HttpServletRequest httpRequest) {
-            String clientIp = request.getRemoteAddr();
+        String ip = parts[0];
+        requestCounts.putIfAbsent(ip, new AtomicInteger(0));
+        int count = requestCounts.get(ip).incrementAndGet();
 
-            requestCounts.putIfAbsent(clientIp, new AtomicInteger(0));
-            int currentCount = requestCounts.get(clientIp).incrementAndGet();
-
-            log.info("[DDoS Protection] IP: {} - Liczba żądań: {}", clientIp, currentCount);
-
-            if (currentCount > REQUEST_LIMIT) {
-                log.warn("[DDoS Alert] Podejrzana aktywność z IP: {}", clientIp);
-                emailAlertService.sendAlert("Podejrzany ruch z IP: " + clientIp + ". Podejrzenie ataku DDos");
-            }
-
-            // Reset licznika po upływie okna czasowego
-            new Thread(() -> {
-                try {
-                    Thread.sleep(TIME_WINDOW_MS);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
-                requestCounts.get(clientIp).set(0);
-            }).start();
+        if (count > REQUEST_LIMIT) {
+            sendAlert("DDoS Alert from IP: " + ip);
         }
 
-        chain.doFilter(request, response);
+        new Thread(() -> {
+            try { Thread.sleep(TIME_WINDOW_MS); } catch (InterruptedException e) {}
+            requestCounts.get(ip).set(0);
+        }).start();
+    }
+
+    protected void sendAlert(String message) {
+        ACLMessage alert = new ACLMessage(ACLMessage.INFORM);
+        alert.addReceiver(new AID("alert-agent", AID.ISLOCALNAME));
+        alert.setContent(message);
+        send(alert);
     }
 }

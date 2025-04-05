@@ -1,56 +1,48 @@
 package io.github.kubq01.networklibrary.filter;
 
-import io.github.kubq01.networklibrary.emailSender.EmailAlertService;
-import jakarta.servlet.Filter;
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.ServletRequest;
-import jakarta.servlet.ServletResponse;
-import jakarta.servlet.http.HttpServletRequest;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.annotation.Order;
-import org.springframework.stereotype.Component;
+import jade.core.AID;
+import jade.core.Agent;
+import jade.core.behaviours.CyclicBehaviour;
+import jade.lang.acl.ACLMessage;
 
-import java.io.IOException;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.regex.Pattern;
 
-@Slf4j
-@Component
-@Order(3)
-public class SQLInjectionFilter implements Filter {
-
+public class SQLInjectionFilter extends Agent {
     private static final Pattern SQL_PATTERN = Pattern.compile(".*([';]+|(--)+).*", Pattern.CASE_INSENSITIVE);
 
-    private final EmailAlertService emailAlertService;
-
-    public SQLInjectionFilter(EmailAlertService emailAlertService) {
-        this.emailAlertService = emailAlertService;
+    @Override
+    protected void setup() {
+        addBehaviour(new CyclicBehaviour() {
+            public void action() {
+                ACLMessage msg = receive();
+                if (msg != null) newRequest(msg);
+                else block();
+            }
+        });
     }
 
-    @Override
-    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
-            throws IOException, ServletException {
+    public void newRequest(ACLMessage msg) {
+        String[] parts = msg.getContent().split("\\|", 3);
+        if (parts.length < 3) return;
 
-        if (request instanceof HttpServletRequest httpRequest) {
-            String query = httpRequest.getQueryString();
+        String ip = parts[0];
+        String query = URLDecoder.decode(parts[2], StandardCharsets.UTF_8);
 
-            if (query != null) {
-                String[] params = query.split("&");
-
-                for (String param : params) {
-                    String[] keyValue = param.split("=", 2);
-                    if (keyValue.length > 1) {
-                        String value = keyValue[1];
-                        if (SQL_PATTERN.matcher(value).matches()) {
-                            log.warn("[SQL Injection Alert] Podejrzana wartość: {}", value);
-                            emailAlertService.sendAlert("Podejrzany ruch z IP: " + request.getRemoteAddr() + ". Podejrzenie ataku SQL Injection: " + value);
-                            break;
-                        }
-                    }
-                }
+        for (String param : query.split("&")) {
+            String[] kv = param.split("=", 2);
+            if (kv.length > 1 && SQL_PATTERN.matcher(kv[1]).matches()) {
+                sendAlert("SQL Injection from IP: " + ip + " value: " + kv[1]);
+                break;
             }
         }
+    }
 
-        chain.doFilter(request, response);
+    protected void sendAlert(String message) {
+        ACLMessage alert = new ACLMessage(ACLMessage.INFORM);
+        alert.addReceiver(new AID("alert-agent", AID.ISLOCALNAME));
+        alert.setContent(message);
+        send(alert);
     }
 }

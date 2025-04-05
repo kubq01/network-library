@@ -1,56 +1,35 @@
 package io.github.kubq01.networklibrary.filter;
 
-import io.github.kubq01.networklibrary.emailSender.EmailAlertService;
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletResponse;
-import jakarta.servlet.http.HttpServletRequest;
+import jade.lang.acl.ACLMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.test.util.ReflectionTestUtils;
+import java.util.concurrent.atomic.AtomicBoolean;
 
-import java.io.IOException;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import static org.mockito.Mockito.*;
+class DDoSFilterTest  {
 
-class DDoSFilterTest {
-
-    private DDoSFilter filter;
-    private HttpServletRequest request;
-    private ServletResponse response;
-    private FilterChain chain;
-
-    @Mock
-    private JavaMailSender mailSender;
-
-    @InjectMocks
-    private EmailAlertService emailAlertService;
+    private DDoSFilter agent;
+    private AtomicBoolean sent = new AtomicBoolean(false);
 
     @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-        ReflectionTestUtils.setField(emailAlertService, "emailAlertsEnabled", true);
-        ReflectionTestUtils.setField(emailAlertService, "recipientEmail", "security@example.com");
-        ReflectionTestUtils.setField(emailAlertService, "emailSubject", "Security Alert");
-        filter = new DDoSFilter(emailAlertService);
-        request = mock(HttpServletRequest.class);
-        response = mock(ServletResponse.class);
-        chain = mock(FilterChain.class);
+    void setup() {
+        agent = new DDoSFilter() {
+            @Override
+            protected void sendAlert(String message) {
+                sent.set(true);
+            }
+        };
     }
 
     @Test
-    void shouldDetectHighTraffic() throws IOException, jakarta.servlet.ServletException {
-        when(request.getRemoteAddr()).thenReturn("192.168.1.1");
-
-        for (int i = 0; i < 110; i++) { // Exceed limit
-            filter.doFilter(request, response, chain);
+    void shouldDetectDDoS() {
+        for (int i = 0; i < 120; i++) {
+            ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
+            msg.setContent("10.0.0.5|/test|");
+            agent.newRequest(msg);
         }
 
-        verify(mailSender, times(10)).send(any(SimpleMailMessage.class));
-        verify(chain, times(110)).doFilter(request, response);
+        assertTrue(sent.get());
     }
 }

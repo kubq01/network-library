@@ -1,57 +1,42 @@
 package io.github.kubq01.networklibrary.filter;
 
-import io.github.kubq01.networklibrary.emailSender.EmailAlertService;
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletResponse;
-import jakarta.servlet.http.HttpServletRequest;
+import jade.lang.acl.ACLMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.test.util.ReflectionTestUtils;
+import java.util.concurrent.atomic.AtomicBoolean;
 
-import java.io.IOException;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import static org.mockito.Mockito.*;
 class BruteForceFilterTest {
 
-    private BruteForceFilter filter;
-    private HttpServletRequest request;
-    private ServletResponse response;
-    private FilterChain chain;
-
-    @Mock
-    private JavaMailSender mailSender;
-
-    @InjectMocks
-    private EmailAlertService emailAlertService;
+    private BruteForceFilter agent;
+    private AtomicBoolean sent = new AtomicBoolean(false);
+    private String lastMessage;
 
     @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-        ReflectionTestUtils.setField(emailAlertService, "emailAlertsEnabled", true);
-        ReflectionTestUtils.setField(emailAlertService, "recipientEmail", "security@example.com");
-        ReflectionTestUtils.setField(emailAlertService, "emailSubject", "Security Alert");
-        ReflectionTestUtils.setField(emailAlertService, "loginPath", "/login");
-        filter = new BruteForceFilter(emailAlertService);
-        request = mock(HttpServletRequest.class);
-        response = mock(ServletResponse.class);
-        chain = mock(FilterChain.class);
+    void setup() {
+        agent = new BruteForceFilter() {
+            @Override
+            protected void sendAlert(String message) {
+                sent.set(true);
+                lastMessage = message;
+            }
+        };
     }
 
     @Test
-    void shouldDetectBruteForce() throws IOException, jakarta.servlet.ServletException {
-        when(request.getRemoteAddr()).thenReturn("192.168.1.2");
-        when(request.getRequestURI()).thenReturn("/login");
+    void shouldDetectBruteForce() {
+        String content = "192.168.0.1|/login|user=admin";
 
-        for (int i = 0; i < 35; i++) { // Exceed limit
-            filter.doFilter(request, response, chain);
+        for (int i = 0; i < 35; i++) {
+            ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
+            msg.setContent(content);
+            agent.newRequest(msg);
         }
 
-        verify(mailSender, times(5)).send(any(SimpleMailMessage.class));
-        verify(chain, times(35)).doFilter(request, response);
+        assertTrue(sent.get());
+        assertNotNull(lastMessage);
+        assertTrue(lastMessage.contains("Brute Force"));
     }
 }
