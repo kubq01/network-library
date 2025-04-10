@@ -4,10 +4,13 @@ import jade.core.AID;
 import jade.core.Agent;
 import jade.core.behaviours.CyclicBehaviour;
 import jade.lang.acl.ACLMessage;
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+@Slf4j
 public class BruteForceFilter extends Agent {
 
     private static final Map<String, AtomicInteger> loginAttempts = new ConcurrentHashMap<>();
@@ -18,6 +21,7 @@ public class BruteForceFilter extends Agent {
     protected void setup() {
         addBehaviour(new CyclicBehaviour() {
             public void action() {
+                log.info("Brute force agent action");
                 ACLMessage msg = receive();
                 if (msg != null) newRequest(msg);
                 else block();

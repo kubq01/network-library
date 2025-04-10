@@ -4,11 +4,13 @@ import jade.core.AID;
 import jade.core.Agent;
 import jade.core.behaviours.CyclicBehaviour;
 import jade.lang.acl.ACLMessage;
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-
+@Slf4j
 public class DDoSFilter extends Agent {
 
     private static final Map<String, AtomicInteger> requestCounts = new ConcurrentHashMap<>();
@@ -19,6 +21,7 @@ public class DDoSFilter extends Agent {
     protected void setup() {
         addBehaviour(new CyclicBehaviour() {
             public void action() {
+                log.info("DDoS agent action");
                 ACLMessage msg = receive();
                 if (msg != null) newRequest(msg);
                 else block();

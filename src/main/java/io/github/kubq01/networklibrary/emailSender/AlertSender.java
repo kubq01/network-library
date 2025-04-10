@@ -4,7 +4,9 @@ import jade.core.Agent;
 import jade.core.behaviours.CyclicBehaviour;
 import jade.lang.acl.ACLMessage;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class AlertSender extends Agent {
 
     @Setter
@@ -14,6 +16,7 @@ public class AlertSender extends Agent {
     protected void setup() {
         addBehaviour(new CyclicBehaviour() {
             public void action() {
+                log.info("email agent action");
                 ACLMessage msg = receive();
                 if (msg != null && emailService != null) {
                     emailService.sendAlert(msg.getContent());
