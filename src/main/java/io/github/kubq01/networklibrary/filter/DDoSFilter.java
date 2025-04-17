@@ -19,6 +19,7 @@ public class DDoSFilter extends Agent {
 
     @Override
     protected void setup() {
+        log.info("DoDosFilter setup");
         addBehaviour(new CyclicBehaviour() {
             public void action() {
                 log.info("DDoS agent action");

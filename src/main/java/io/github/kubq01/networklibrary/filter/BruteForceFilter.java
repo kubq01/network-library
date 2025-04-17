@@ -19,6 +19,7 @@ public class BruteForceFilter extends Agent {
 
     @Override
     protected void setup() {
+        log.info("BruteForceFilter setup");
         addBehaviour(new CyclicBehaviour() {
             public void action() {
                 log.info("Brute force agent action");

@@ -16,6 +16,7 @@ public class SQLInjectionFilter extends Agent {
 
     @Override
     protected void setup() {
+        log.info("SQLInjectionFilter setup");
         addBehaviour(new CyclicBehaviour() {
             public void action() {
                 log.info("Sql agent action");

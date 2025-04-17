@@ -26,7 +26,10 @@ public class OneShotSenderAgent extends Agent {
         msg.setContent(content);
         send(msg);
 
+        log.info("agent-name: " + agentName);
+        log.info("agent-content: " + content);
         log.info("one shot agent success");
+        log.info(msg.toString());
 
         doDelete();
     }

@@ -12,6 +12,10 @@ public class AlertSender extends Agent {
     @Setter
     private static EmailAlertService emailService;
 
+    public AlertSender(EmailAlertService emailService) {
+        AlertSender.emailService = emailService;
+    }
+
     @Override
     protected void setup() {
         addBehaviour(new CyclicBehaviour() {

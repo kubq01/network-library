@@ -1,7 +1,5 @@
 package io.github.kubq01.networklibrary.jade;
 
-import jade.core.AID;
-import jade.lang.acl.ACLMessage;
 import jade.wrapper.AgentContainer;
 import jade.wrapper.AgentController;
 import lombok.Setter;
